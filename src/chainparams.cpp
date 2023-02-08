@@ -312,7 +312,7 @@ public:
 
         fDefaultConsistencyChecks = false;
         fRequireStandard = true;
-        fRequireRoutableExternalIP = true;
+        fRequireRoutableExternalIP = false;
         m_is_test_chain = false;
         fAllowMultipleAddressesFromGroup = false;
         fAllowMultiplePorts = false;
@@ -530,7 +530,7 @@ public:
 
         fDefaultConsistencyChecks = false;
         fRequireStandard = false;
-        fRequireRoutableExternalIP = true;
+        fRequireRoutableExternalIP = false;
         m_is_test_chain = true;
         fAllowMultipleAddressesFromGroup = false;
         fAllowMultiplePorts = true;
@@ -735,7 +735,7 @@ public:
 
         fDefaultConsistencyChecks = false;
         fRequireStandard = false;
-        fRequireRoutableExternalIP = true;
+        fRequireRoutableExternalIP = false;
         m_is_test_chain = true;
         fAllowMultipleAddressesFromGroup = true;
         fAllowMultiplePorts = true;

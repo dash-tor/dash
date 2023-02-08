@@ -1189,8 +1189,9 @@ template <typename ProTx>
 static bool CheckService(const ProTx& proTx, CValidationState& state)
 {
     if (!proTx.addr.IsValid()) {
-        return state.Invalid(ValidationInvalidReason::TX_BAD_SPECIAL, false, REJECT_INVALID, "bad-protx-ipaddr");
+        return state.Invalid(ValidationInvalidReason::TX_BAD_SPECIAL, false, REJECT_INVALID, "bad-protx-ipaddr-validity");
     }
+
     if (Params().RequireRoutableExternalIP() && !proTx.addr.IsRoutable()) {
         return state.Invalid(ValidationInvalidReason::TX_BAD_SPECIAL, false, REJECT_INVALID, "bad-protx-ipaddr");
     }
@@ -1204,7 +1205,8 @@ static bool CheckService(const ProTx& proTx, CValidationState& state)
         return state.Invalid(ValidationInvalidReason::TX_BAD_SPECIAL, false, REJECT_INVALID, "bad-protx-ipaddr-port");
     }
 
-    if (!proTx.addr.IsIPv4()) {
+    // Here it confirms if the address is also Tor, as OnionV3 doesn't exist
+    if (!proTx.addr.IsOnionV3() || (!proTx.addr.IsOnionV3() && !proTx.addr.IsIPv4())) {
         return state.Invalid(ValidationInvalidReason::TX_BAD_SPECIAL, false, REJECT_INVALID, "bad-protx-ipaddr");
     }
 

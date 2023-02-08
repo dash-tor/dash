@@ -172,7 +172,7 @@ static CBLSSecretKey ParseBLSSecretKey(const std::string& hexKey, const std::str
     return secKey;
 }
 
-#ifdef ENABLE_WALLET
+
 
 template<typename SpecialTxPayload>
 static void FundSpecialTx(CWallet* pwallet, CMutableTransaction& tx, const SpecialTxPayload& payload, const CTxDestination& fundDest)
@@ -443,7 +443,8 @@ static UniValue protx_register(const JSONRPCRequest& request)
     } else if (isPrepareRegister && (request.fHelp || (request.params.size() != 8 && request.params.size() != 9))) {
         protx_register_prepare_help(request);
     }
-
+    
+    // get reference to wall
     std::shared_ptr<CWallet> const wallet = GetWalletForJSONRPCRequest(request);
     if (!wallet) return NullUniValue;
     CWallet* const pwallet = wallet.get();
@@ -451,7 +452,7 @@ static UniValue protx_register(const JSONRPCRequest& request)
     if (isExternalRegister || isFundRegister) {
         EnsureWalletIsUnlocked(pwallet);
     }
-
+    
     size_t paramIdx = 0;
 
     CAmount collateralAmount = 1000 * COIN;
@@ -462,7 +463,7 @@ static UniValue protx_register(const JSONRPCRequest& request)
 
     CProRegTx ptx;
     ptx.nVersion = CProRegTx::CURRENT_VERSION;
-
+    
     if (isFundRegister) {
         CTxDestination collateralDest = DecodeDestination(request.params[paramIdx].get_str());
         if (!IsValidDestination(collateralDest)) {
@@ -489,9 +490,15 @@ static UniValue protx_register(const JSONRPCRequest& request)
         pwallet->LockCoin(ptx.collateralOutpoint);
     }
 
+
+
     if (request.params[paramIdx].get_str() != "") {
         if (!Lookup(request.params[paramIdx].get_str().c_str(), ptx.addr, Params().GetDefaultPort(), false)) {
-            throw std::runtime_error(strprintf("invalid network address %s", request.params[paramIdx].get_str()));
+            LogPrintf("invalid network address %s", request.params[paramIdx].get_str());
+            LogPrintf("req_params: %s", request.params[paramIdx].get_str().c_str());
+            LogPrintf("ptx addr: %s", ptx.addr.ToString());
+
+            throw std::runtime_error(strprintf("param idx %i", paramIdx));
         }
     }
 
@@ -572,7 +579,6 @@ static UniValue protx_register(const JSONRPCRequest& request)
             // external signing with collateral key
             ptx.vchSig.clear();
             SetTxPayload(tx, ptx);
-
             UniValue ret(UniValue::VOBJ);
             ret.pushKV("tx", EncodeHexTx(CTransaction(tx)));
             ret.pushKV("collateralAddress", EncodeDestination(txDest));
@@ -589,8 +595,12 @@ static UniValue protx_register(const JSONRPCRequest& request)
             if (!spk_man->GetKey(*keyID, key)) {
                 throw JSONRPCError(RPC_INVALID_ADDRESS_OR_KEY, strprintf("collateral key not in wallet: %s", EncodeDestination(txDest)));
             }
+
             SignSpecialTxPayloadByString(tx, ptx, key);
             SetTxPayload(tx, ptx);
+
+            LogPrint(BCLog::NET, "rpcevo protx_register, ptx.addr before transaction: %s \n", ptx.addr.ToString());
+
             return SignAndSendSpecialTx(request, tx, fSubmit);
         }
     }
@@ -613,6 +623,8 @@ static UniValue protx_register_submit(const JSONRPCRequest& request)
     if (tx.nType != TRANSACTION_PROVIDER_REGISTER) {
         throw JSONRPCError(RPC_INVALID_PARAMETER, "transaction not a ProRegTx");
     }
+    LogPrint(BCLog::NET, "rpcevo protx_register_submit, transaction: %s \n", tx.ToString());
+
     CProRegTx ptx;
     if (!GetTxPayload(tx, ptx)) {
         throw JSONRPCError(RPC_INVALID_PARAMETER, "transaction payload not deserializable");
@@ -620,8 +632,10 @@ static UniValue protx_register_submit(const JSONRPCRequest& request)
     if (!ptx.vchSig.empty()) {
         throw JSONRPCError(RPC_INVALID_PARAMETER, "payload signature not empty");
     }
+    LogPrint(BCLog::NET, "rpcevo protx_register_submit, transaction payload: %s \n", ptx.ToString());
 
     ptx.vchSig = DecodeBase64(request.params[1].get_str().c_str());
+    LogPrint(BCLog::NET, "rpcevo protx_register_submit, ptx.addr %s \n", ptx.addr.ToString());
 
     SetTxPayload(tx, ptx);
     return SignAndSendSpecialTx(request, tx);
@@ -900,7 +914,6 @@ static UniValue protx_revoke(const JSONRPCRequest& request)
 
     return SignAndSendSpecialTx(request, tx);
 }
-#endif//ENABLE_WALLET
 
 static void protx_list_help(const JSONRPCRequest& request)
 {

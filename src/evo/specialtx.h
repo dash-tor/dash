@@ -10,6 +10,7 @@
 #include <streams.h>
 #include <uint256.h>
 #include <version.h>
+#include <logging.h>
 
 #include <vector>
 

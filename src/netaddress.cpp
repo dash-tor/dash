@@ -20,6 +20,8 @@
 #include <ios>
 #include <tuple>
 
+#include <logging.h>
+
 constexpr size_t CNetAddr::V1_SERIALIZATION_SIZE;
 constexpr size_t CNetAddr::MAX_ADDRV2_SIZE;
 
@@ -395,6 +397,12 @@ bool CNetAddr::IsHeNet() const
 bool CNetAddr::IsTor() const { return m_net == NET_ONION; }
 
 /**
+ * Check whether this object represents an ONION V3 address.
+ * @see CNetAddr::SetSpecial(const std::string &)
+ */
+bool CNetAddr::IsOnionV3() const { return m_addr.size() == ADDR_TORV3_SIZE; }
+
+/**
  * Check whether this object represents an I2P address.
  */
 bool CNetAddr::IsI2P() const { return m_net == NET_I2P; }
@@ -445,6 +453,10 @@ bool CNetAddr::IsValid() const
         if (addr == INADDR_ANY || addr == INADDR_NONE) {
             return false;
         }
+    }
+
+    if(IsTor() && !(ToStringIP(false).find(".onion") != std::string::npos)){
+        return false;
     }
 
     return true;
@@ -913,6 +925,11 @@ bool CService::GetSockAddr(struct sockaddr* paddr, socklen_t *addrlen) const
         paddrin6->sin6_family = AF_INET6;
         paddrin6->sin6_port = htons(port);
         return true;
+    }
+    // TODO: find implementation for fullnodes and use here
+    if(IsTor()) {
+        LogPrintf("TRYING TO CREATE SOCKET WITH TOR ADDR %s", paddr->sa_data);
+
     }
     return false;
 }

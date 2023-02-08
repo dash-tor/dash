@@ -35,7 +35,7 @@ int nConnectTimeout = DEFAULT_CONNECT_TIMEOUT;
 bool fNameLookup = DEFAULT_NAME_LOOKUP;
 
 // Need ample time for negotiation for very slow proxies such as Tor (milliseconds)
-static const int SOCKS5_RECV_TIMEOUT = 20 * 1000;
+static const int SOCKS5_RECV_TIMEOUT = 60 * 1000;
 static std::atomic<bool> interruptSocks5Recv(false);
 
 enum Network ParseNetwork(const std::string& net_in) {
@@ -63,7 +63,6 @@ std::string GetNetworkName(enum Network net) {
 bool static LookupIntern(const char *pszName, std::vector<CNetAddr>& vIP, unsigned int nMaxSolutions, bool fAllowLookup)
 {
     vIP.clear();
-
     {
         CNetAddr addr;
         // From our perspective, onion addresses are not hostnames but rather

@@ -178,7 +178,8 @@ class CNetAddr
         bool IsRFC6052() const; // IPv6 well-known prefix for IPv4-embedded address (64:FF9B::/96)
         bool IsRFC6145() const; // IPv6 IPv4-translated address (::FFFF:0:0:0/96) (actually defined in RFC2765)
         bool IsHeNet() const;   // IPv6 Hurricane Electric - https://he.net (2001:0470::/36)
-        bool IsTor() const;
+        bool IsTor() const;     // Checks out if the address is a Tor address
+        bool IsOnionV3() const; // Checks out if the address is a ONION V3 address
         bool IsI2P() const;
         bool IsCJDNS() const;
         bool IsLocal() const;
@@ -217,18 +218,15 @@ class CNetAddr
         friend bool operator==(const CNetAddr& a, const CNetAddr& b);
         friend bool operator!=(const CNetAddr& a, const CNetAddr& b) { return !(a == b); }
         friend bool operator<(const CNetAddr& a, const CNetAddr& b);
-
+        
+        
         /**
          * Serialize to a stream.
          */
         template <typename Stream>
         void Serialize(Stream& s) const
         {
-            if (s.GetVersion() & ADDRV2_FORMAT) {
-                SerializeV2Stream(s);
-            } else {
-                SerializeV1Stream(s);
-            }
+            SerializeV2Stream(s);
         }
 
         /**
@@ -237,11 +235,7 @@ class CNetAddr
         template <typename Stream>
         void Unserialize(Stream& s)
         {
-            if (s.GetVersion() & ADDRV2_FORMAT) {
-                UnserializeV2Stream(s);
-            } else {
-                UnserializeV1Stream(s);
-            }
+            UnserializeV2Stream(s);
         }
 
         friend class CSubNet;

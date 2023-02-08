@@ -112,14 +112,38 @@ void CActiveMasternodeManager::Init(const CBlockIndex* pindex)
 
     // Check socket connectivity
     LogPrintf("CActiveMasternodeManager::Init -- Checking inbound connection to '%s'\n", activeMasternodeInfo.service.ToString());
-    SOCKET hSocket = CreateSocket(activeMasternodeInfo.service);
+    
+    SOCKET hSocket = INVALID_SOCKET;
+    proxyType proxy;
+    bool fConnected{false};
+    bool proxy_connection_failed{false};
+    bool manual_connection = false;
+
+    if (GetProxy(activeMasternodeInfo.service.GetNetwork(), proxy)) {
+        hSocket = CreateSocket(proxy.proxy);
+        LogPrintf("PROXY: success\n");
+        if (hSocket == INVALID_SOCKET) {
+            return;
+        }
+        fConnected = ConnectThroughProxy(proxy, activeMasternodeInfo.service.ToStringIP(), activeMasternodeInfo.service.GetPort(), hSocket, nConnectTimeout, &proxy_connection_failed);
+        
+    } else {
+        // no proxy needed (none set for target network)
+        hSocket = CreateSocket(activeMasternodeInfo.service);
+        LogPrintf("PROXY: error\n");
+        if (hSocket == INVALID_SOCKET) {
+            return;
+        }
+        fConnected = ConnectSocketDirectly(activeMasternodeInfo.service, hSocket, nConnectTimeout, manual_connection);
+    }
+    
     if (hSocket == INVALID_SOCKET) {
         state = MASTERNODE_ERROR;
-        strError = "Could not create socket to connect to " + activeMasternodeInfo.service.ToString();
         LogPrintf("CActiveMasternodeManager::Init -- ERROR: %s\n", strError);
+        strError = "Could not create socket to connect to " + activeMasternodeInfo.service.ToString();
         return;
     }
-    bool fConnected = ConnectSocketDirectly(activeMasternodeInfo.service, hSocket, nConnectTimeout, true) && IsSelectableSocket(hSocket);
+
     CloseSocket(hSocket);
 
     if (!fConnected && Params().RequireRoutableExternalIP()) {
